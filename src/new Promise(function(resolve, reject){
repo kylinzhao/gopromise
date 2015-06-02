@@ -1,0 +1,21 @@
+new Promise(function(resolve, reject){
+	setTimeout(function(){
+		console.log("start")
+		resolve("go to next");
+	},1000);
+}).then(function(data,reslove,reject){
+	console.log(data);
+	reslove("one")
+}).then(function(data,reslove,reject){
+	console.log(data);
+	reslove("two")
+}).then(function(data,reslove,reject){
+	console.log(data);
+	reslove("three")
+}).then(function(data,reslove,reject){
+    console.log(data)
+    reslove("four");
+}).finish(function(data,reslove,reject){
+	console.log(data);
+	console.log("finish")
+});
