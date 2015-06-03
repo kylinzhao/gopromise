@@ -12,6 +12,8 @@ new Promise(function(resolve, reject){
 }).then(function(data,reslove,reject){
 	console.log(data);
 	reslove("three")
+}).reject(function(){
+	
 }).then(function(data,reslove,reject){
     console.log(data)
     reslove("four");

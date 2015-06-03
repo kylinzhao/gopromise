@@ -1,9 +1,4 @@
 (function(){
-
-	// if(window.Promise){
-	// 	return window.Promise;
-	// }
-
 	var Promise = function( executed ){
 		this.status = "pending";
 		this.queue = [];
@@ -35,12 +30,12 @@
 	}
 
 	Promise.prototype.reslove = function(value){
-		this.status = "resloved";
+		this.status = "fulfilled";
 		_dequeue.call(this,value);
 
 	};
 	Promise.prototype.reject = function(value){
-		this.status = "reject";
+		this.status = "rejected";
 		_dequeue.call(this,value);
 	};
 
@@ -56,9 +51,9 @@
 		}
 
 		var _type = {
-			"then" : "resloved",
+			"then" : "fulfilled",
 			"catch" : "reject",
-			"finish" : "finish"
+			"finish" : "rejected"
 		}[type];
 
 		if(this.status === _type){
@@ -69,7 +64,7 @@
 			});
 		}else if(this.status === "pending"){
 			this.queue.push(function(value){
-				if(me.status === "resloved"){
+				if(me.status === _type){
 					_callback(me.value);
 				}
 			});
@@ -79,13 +74,13 @@
 	};
 
 	Promise.prototype.then = function(resloved){
-		return _doProcess.call(this,"then", resloved);
+		return _doProcess.call(this, "then", resloved);
 	};
 
 	Promise.prototype.delay = function(){};
 
-	Promise.prototype.catch = function(callback){
-		return _doProcess.call(this,"reject", resloved);
+	Promise.prototype.catch = function(resloved){
+		return _doProcess.call(this, "catch", resloved);
 	};
 
 	Promise.prototype.finish = function(){
@@ -111,7 +106,22 @@
 	}).then(function(data,reslove,reject){
 		setTimeout(function(){
 			console.log(data);
-			reslove("three")
+			reject("reject one")
+		},1000);
+	}).catch(function(data,reslove,reject){
+		setTimeout(function(){
+		    console.log(data)
+		    reject("reject two");
+		},1000);
+	}).then(function(data,reslove,reject){
+		setTimeout(function(){
+		    console.log(data)
+		    reslove("three");
+		},1000);
+	}).catch(function(data,reslove,reject){
+		setTimeout(function(){
+		    console.log(data)
+		    reslove("four");
 		},1000);
 	}).then(function(data,reslove,reject){
 		setTimeout(function(){
