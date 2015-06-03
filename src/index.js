@@ -30,7 +30,7 @@
 	}
 
 	Promise.prototype.reslove = function(value){
-		this.status = "fulfilled";
+		this.status = "fullfilled";
 		_dequeue.call(this,value);
 
 	};
@@ -39,98 +39,196 @@
 		_dequeue.call(this,value);
 	};
 
-	var _doProcess = function(type,resloved){
+	var _doProcess = function(resloved,rejected){
 		var me = this;
 		var promise = new Promise();
+
+		var _resolveCallback = function(value){
+			var _reslovedValue;
+			if(resloved){
+				_reslovedValue = resloved(value);
+			}
+			return _reslovedValue;
+		}
+		var _rejectCallback = function(value){
+			var _rejectValue;
+			if(rejected){
+				_rejectValue = rejected(value)
+			}
+			return _rejectValue;
+		}
 		var _callback = function(value){
-			resloved && resloved(value, function(value){
-				promise.reslove(value);
-			},function(value){
-				promise.reject(value);
-			});
+			var _callbackValue;
+			if(this.status === "fullfilled"){
+				_callbackValue = _resolveCallback(value);
+				if(!isPromise(_callbackValue)){
+					promise.reslove(_callbackValue);
+				}
+			}else if(this.status === "rejected"){
+				_callbackValue = _rejectCallback(value);
+				if(!isPromise(_callbackValue)){
+					promise.reject(_callbackValue);
+				}
+			}
+
+			try{
+				if(isPromise(_callbackValue)){
+					_callbackValue.then(function(data){
+						promise.reslove(data);
+					},function(data){
+						promise.reject(data);
+					});	
+				}
+			}catch(e){
+				promise.reject(e);
+			}
+			
 		}
 
-		var _type = {
-			"then" : "fulfilled",
-			"catch" : "reject",
-			"finish" : "rejected"
-		}[type];
-
-		if(this.status === _type){
-			_callback(me.value, function(){
-				promise.reslove();
-			}, function(){
-				promise.reject();
-			});
-		}else if(this.status === "pending"){
+		if(this.status === "pending"){
 			this.queue.push(function(value){
-				if(me.status === _type){
-					_callback(me.value);
-				}
+				_callback.call(me,value);
 			});
+		}else{
+			_callback.call(me,value);
 		}
 
 		return promise;
 	};
 
-	Promise.prototype.then = function(resloved){
-		return _doProcess.call(this, "then", resloved);
+	Promise.prototype.then = function(onFullFilled, onRejected){
+		return _doProcess.call(this, onFullFilled, onRejected);
 	};
 
-	Promise.prototype.delay = function(){};
-
 	Promise.prototype.catch = function(resloved){
-		return _doProcess.call(this, "catch", resloved);
+		// return _doProcess.call(this, "catch", resloved);
 	};
 
 	Promise.prototype.finish = function(){
 
 	};
+
+	Promise.all = function(list,onFullFilled,onRejected){
+		if(!list.length) {
+			onRejected && onRejected();
+		}
+		return new Promise(function(reslove,reject){
+			var max = list.length;
+			var promises = list.slice(0);
+			var values = [];
+			var flag = true;
+			for(var i=0;i<max;i++){
+				(function(order){
+					var _list = list[order];
+					if(isFunction(_list)){
+						max--;
+						values[order] = list[order]();
+						// continue;
+					}else if(isPromise(_list)){
+						list[order].then(function(data){
+							max--;
+							values[order] = data;
+							if(!max){
+								flag && reslove(values);
+							}
+						},function(reason){
+							max--;
+							values[order] = reason;
+							if(!max){
+								!flag && reject(values);
+							}
+						});
+					}else{
+						max--;
+						values[order] = _list;
+					}
+				})(i);
+			}
+		})
+	};
 	// return Promise;
 
-	new Promise(function(resolve, reject){
-		setTimeout(function(){
-			console.log("start")
-			resolve("go to next");
-		},1000);
-	}).then(function(data,reslove,reject){
-		setTimeout(function(){
-			console.log(data);
-			reslove("one")
-		},1000);
-	}).then(function(data,reslove,reject){
-		setTimeout(function(){
-			console.log(data);
-			reslove("two")
-		},1000);
-	}).then(function(data,reslove,reject){
-		setTimeout(function(){
-			console.log(data);
-			reject("reject one")
-		},1000);
-	}).catch(function(data,reslove,reject){
-		setTimeout(function(){
-		    console.log(data)
-		    reject("reject two");
-		},1000);
-	}).then(function(data,reslove,reject){
-		setTimeout(function(){
-		    console.log(data)
-		    reslove("three");
-		},1000);
-	}).catch(function(data,reslove,reject){
-		setTimeout(function(){
-		    console.log(data)
-		    reslove("four");
-		},1000);
-	}).then(function(data,reslove,reject){
-		setTimeout(function(){
-		    console.log(data)
-		    reslove("four");
-		},1000);
-	}).finish(function(data,reslove,reject){
+	var isPromise = function(obj){
+		return (obj && obj.constructor && obj.constructor === Promise)
+	}
+
+	var isFunction = function(obj){ return typeof obj === 'function' }
+
+	// new Promise(function(resolve, reject){
+	// 	setTimeout(function(){
+	// 		console.log("start")
+	// 		reject("go to next");
+	// 	},1000);
+	// }).then(
+	// 	function(data){
+	// 		var me = this;
+	// 		return new Promise(function(reslove,reject){
+	// 			setTimeout(function(){
+	// 				console.log(data);
+	// 				resolve("resloved 1")
+	// 			},1000);
+	// 		});
+	// 	},function(reason){
+	// 		return new Promise(function(reslove,reject){
+	// 			setTimeout(function(){
+	// 				console.log(reason);
+	// 				reject("resloved 1")
+	// 			},1000);
+	// 		});
+	// 	}
+	// ).then(
+	// 	function(data){
+	// 		console.log(data);
+	// 		return "reslove2 immediately";
+	// 	},function(reason){
+	// 		console.log(reason);
+	// 		return "reject2 immediately";
+	// 	}
+	// ).then(
+	// 	function(data){
+	// 		console.log(data);
+	// 		return "reslove3 immediately";
+	// 	},function(reason){
+	// 		console.log(reason);
+	// 		return "reject3 immediately";
+	// 	}
+	// )
+	// new Promise
+	// .catch(function(data,reslove,reject){
+	// 	setTimeout(function(){
+	// 	    console.log(data)
+	// 	    reject("reject two");
+	// 	},1000);
+	// }).then(function(data,reslove,reject){
+	// 	setTimeout(function(){
+	// 	    console.log(data)
+	// 	    reslove("three");
+	// 	},1000);
+	// }).catch(function(data,reslove,reject){
+	// 	setTimeout(function(){
+	// 	    console.log(data)
+	// 	    reslove("four");
+	// 	},1000);
+	// }).then(function(data,reslove,reject){
+	// 	setTimeout(function(){
+	// 	    console.log(data)
+	// 	    reslove("four");
+	// 	},1000);
+	// }).finish(function(data,reslove,reject){
+	// 	console.log(data);
+	// 	console.log("finish")
+	// });
+
+	Promise.all([function(){
+		console.log(1);
+		return 1;
+	},function(){
+		console.log(2);
+		return 2;
+	}]).then(function(data){
 		console.log(data);
-		console.log("finish")
-	});
+	},function(reasons){
+		console.log(reasons);
+	})
 
 })()
