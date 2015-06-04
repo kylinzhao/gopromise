@@ -90,7 +90,7 @@
 				_callback.call(me,value);
 			});
 		}else{
-			_callback.call(me,value);
+			_callback.call(me,me.value);
 		}
 
 		return promise;
@@ -117,12 +117,21 @@
 			var promises = list.slice(0);
 			var values = [];
 			var flag = true;
-			for(var i=0;i<max;i++){
+			for(var i=0,len=max;i<len;i++){
 				(function(order){
 					var _list = list[order];
 					if(isFunction(_list)){
 						max--;
-						values[order] = list[order]();
+						try{
+							values[order] = list[order]();
+						}catch(e){
+							values[order] = e;
+							flag = false;
+						}
+						if(!max){
+							flag && reslove(values);
+							!flag && reject(values);
+						}
 						// continue;
 					}else if(isPromise(_list)){
 						list[order].then(function(data){
@@ -141,6 +150,9 @@
 					}else{
 						max--;
 						values[order] = _list;
+						if(!max){
+							flag && reslove(values);
+						}
 					}
 				})(i);
 			}
@@ -219,16 +231,6 @@
 	// 	console.log("finish")
 	// });
 
-	Promise.all([function(){
-		console.log(1);
-		return 1;
-	},function(){
-		console.log(2);
-		return 2;
-	}]).then(function(data){
-		console.log(data);
-	},function(reasons){
-		console.log(reasons);
-	})
+	
 
 })()

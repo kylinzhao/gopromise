@@ -30,3 +30,20 @@ new Promise(function(resolve, reject){
 		return("reject 2")
 	},1000)
 });
+
+
+Promise.all([
+	new Promise(function(reslove,reject){
+		setTimeout(function(){
+			console.log(1);
+			reslove(1);
+		},1000);
+	})
+,function(){
+	console.log(2);
+	return 2;
+}]).then(function(data){
+	console.log(data);
+},function(reasons){
+	console.log(reasons);
+})
