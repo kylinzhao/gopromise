@@ -1,5 +1,5 @@
 #Promise
-基本按照ES6规范实现的Promise
+基本按照Promise/A+规范实现的Promise
 已经实现的api
 * new Promise
 * reslove
